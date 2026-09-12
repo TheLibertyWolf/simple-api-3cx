@@ -197,7 +197,7 @@ https://<fqdn-3cx>/simple-api-3cx/v1/automation?poste=<poste>&action=<statut>&au
 https://<fqdn-3cx>/simple-api-3cx/v1/automation?poste=<poste>&file=<file>&action=<login|logout>&auth=<nom>:<secret>
 ~~~
 
-Les statuts acceptés sont <code>available</code> (disponible), <code>away</code> (absent), <code>dnd</code> (ne pas déranger), <code>custom1</code> et <code>custom2</code>. Pour une file, <code>login</code> connecte et <code>logout</code> déconnecte **cette file uniquement**. Le poste doit déjà être membre de la file. L’URL fonctionne dans un navigateur ou avec <code>curl 'URL'</code> depuis une IP autorisée. Ouvrir l’URL déclenche immédiatement l’action ; une prévisualisation automatique peut aussi la déclencher. Révoquer avec <code>sudo simple-api-3cx automation revoke mon-client</code>.
+Les statuts acceptés sont <code>available</code> ou <code>dispo</code> (disponible), <code>away</code> ou <code>absent</code>, <code>dnd</code> ou <code>npd</code> (ne pas déranger), <code>custom1</code> et <code>custom2</code>. Pour une file, <code>login</code> ou <code>co</code> connecte et <code>logout</code> ou <code>deco</code> déconnecte **cette file uniquement**. Le poste doit déjà être membre de la file. L’URL fonctionne dans un navigateur ou avec <code>curl 'URL'</code> depuis une IP autorisée. Ouvrir l’URL déclenche immédiatement l’action ; une prévisualisation automatique peut aussi la déclencher. Révoquer avec <code>sudo simple-api-3cx automation revoke mon-client</code>.
 
 ## Liens pour navigateur
 

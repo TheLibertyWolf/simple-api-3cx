@@ -37,6 +37,10 @@ PROFILE_CODES = {
     "custom1": ("*33", "Custom 1"),
     "custom2": ("*34", "Custom 2"),
 }
+AUTOMATION_ACTIONS = {
+    "dispo": "available", "absent": "away", "npd": "dnd",
+    "co": "login", "deco": "logout",
+}
 
 
 class ApiError(Exception):
@@ -490,8 +494,8 @@ class Handler(BaseHTTPRequestHandler):
                     "POST /users/{extension}/queues/global {logged_in: true|false}",
                     "POST /queues/{queue}/agents/{extension}/login {logged_in: true|false}",
                     "GET /browser/queues/{queue}/agents/{extension}/login|logout?link=<permanent-link>",
-                    "GET /automation?poste={extension}&action=available|away|dnd|custom1|custom2&auth={name}:{secret}",
-                    "GET /automation?poste={extension}&file={queue}&action=login|logout&auth={name}:{secret}",
+                    "GET /automation?poste={extension}&action=available|away|dnd|custom1|custom2|dispo|absent|npd&auth={name}:{secret}",
+                    "GET /automation?poste={extension}&file={queue}&action=login|logout|co|deco&auth={name}:{secret}",
                 ],
             })
         if not path.startswith(base):
@@ -500,7 +504,8 @@ class Handler(BaseHTTPRequestHandler):
         if route == "/automation" and self.command == "GET":
             authorize_automation(self, config, params)
             poste = number(one_param(params, "poste"))
-            action = one_param(params, "action")
+            action = one_param(params, "action").lower()
+            action = AUTOMATION_ACTIONS.get(action, action)
             file_number = one_param(params, "file", required=False)
             if action in PROFILE_CODES and file_number is None:
                 return self.change_status(poste, action, config)
