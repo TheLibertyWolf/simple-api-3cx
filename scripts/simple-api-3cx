@@ -23,6 +23,9 @@ while :; do
   echo "10. Lister les liens permanents"
   echo "11. Révoquer un lien permanent"
   echo "12. Créer un lien permanent pour une file précise"
+  echo "13. Créer un accès URL générique pour automatisation"
+  echo "14. Lister les accès d'automatisation"
+  echo "15. Révoquer un accès d'automatisation"
   echo "0. Quitter"
   printf '> '
   IFS= read -r choice || exit 0
@@ -69,6 +72,15 @@ while :; do
       printf 'Poste : '; IFS= read -r extension
       printf 'Action (login ou logout) : '; IFS= read -r action
       /usr/bin/python3 "$APP" queue-link "$link_name" "$queue" "$extension" "$action"
+      ;;
+    13)
+      printf "Nom de l'automatisation : "; IFS= read -r automation_name
+      /usr/bin/python3 "$APP" automation create "$automation_name"
+      ;;
+    14) /usr/bin/python3 "$APP" automation list ;;
+    15)
+      printf "Nom de l'automatisation à révoquer : "; IFS= read -r automation_name
+      /usr/bin/python3 "$APP" automation revoke "$automation_name"
       ;;
     0) exit 0 ;;
     *) echo 'Choix inconnu' ;;

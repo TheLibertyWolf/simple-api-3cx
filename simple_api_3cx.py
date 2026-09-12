@@ -415,6 +415,28 @@ def authorize(handler, config, scope, query):
     raise ApiError(401, "Clé API invalide")
 
 
+def authorize_automation(handler, config, query):
+    ip = client_ip(handler)
+    if not any(ip in ipaddress.ip_network(cidr, strict=False) for cidr in config["allowed_ips"]):
+        raise ApiError(403, "Adresse IP non autorisée")
+    credentials = query.get("auth", [])
+    if len(credentials) != 1 or ":" not in credentials[0]:
+        raise ApiError(401, "Clé d'automatisation requise")
+    name, secret = credentials[0].split(":", 1)
+    entry = config.get("automation_keys", {}).get(name)
+    if not entry or not hmac.compare_digest(entry["hash"], digest(secret)):
+        raise ApiError(401, "Clé d'automatisation invalide")
+
+
+def one_param(query, name, required=True):
+    values = query.get(name, [])
+    if len(values) != 1 or not values[0]:
+        if required or values:
+            raise ApiError(400, f"Paramètre {name} invalide ou manquant")
+        return None
+    return values[0]
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "SimpleAPI3CX/0.1"
 
@@ -457,7 +479,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(200,{"service":"simple-api-3cx","status":"ok"})
         if path == base+"/help" and self.command=="GET":
             return self.respond(200,{
-                "auth":"Authorization: Bearer <key>; browser actions use a one-time ticket or an IP-restricted permanent link",
+                "auth":"Authorization: Bearer <key>; browser actions use a ticket or permanent link; /automation uses auth=<name>:<secret> and an allowed IP",
                 "routes":[
                     "GET /users", "GET /users/{extension}",
                     "GET /users/{extension}/queues", "GET /queues",
@@ -468,11 +490,23 @@ class Handler(BaseHTTPRequestHandler):
                     "POST /users/{extension}/queues/global {logged_in: true|false}",
                     "POST /queues/{queue}/agents/{extension}/login {logged_in: true|false}",
                     "GET /browser/queues/{queue}/agents/{extension}/login|logout?link=<permanent-link>",
+                    "GET /automation?poste={extension}&action=available|away|dnd|custom1|custom2&auth={name}:{secret}",
+                    "GET /automation?poste={extension}&file={queue}&action=login|logout&auth={name}:{secret}",
                 ],
             })
         if not path.startswith(base):
             raise ApiError(404,"Route inconnue")
         route = path[len(base):]
+        if route == "/automation" and self.command == "GET":
+            authorize_automation(self, config, params)
+            poste = number(one_param(params, "poste"))
+            action = one_param(params, "action")
+            file_number = one_param(params, "file", required=False)
+            if action in PROFILE_CODES and file_number is None:
+                return self.change_status(poste, action, config)
+            if action in ("login", "logout") and file_number is not None:
+                return self.change_queue_individual(poste, number(file_number), action == "login")
+            raise ApiError(400, "Action invalide : statut sans file, ou login/logout avec file")
         scope = "control" if self.command=="POST" or route.startswith("/browser/") else "read"
         identity = authorize(self,config,scope,params)
         if identity[0]=="ticket":
@@ -597,6 +631,9 @@ def cli():
     queue_link.add_argument("queue")
     queue_link.add_argument("extension")
     queue_link.add_argument("action",choices=["login","logout"])
+    automation = sub.add_parser("automation")
+    automation.add_argument("action", choices=["create", "list", "revoke"])
+    automation.add_argument("name", nargs="?")
     args = parser.parse_args()
     if args.command=="init":
         if CONFIG_PATH.exists():
@@ -605,7 +642,7 @@ def cli():
             "sip_domain":os.environ.get("SIMPLE_API_3CX_DOMAIN","pbx.example.invalid"),
             "sip_target":"127.0.0.1", "listen_host":"127.0.0.1", "listen_port":18081,
             "public_url":os.environ.get("SIMPLE_API_3CX_URL","https://pbx.example.invalid"),
-            "allowed_ips":["127.0.0.1/32","::1/128"],"keys":{},"tickets":{},"links":{},
+            "allowed_ips":["127.0.0.1/32","::1/128"],"keys":{},"tickets":{},"links":{},"automation_keys":{},
         }
         save_config(config)
         print("Configuration créée ; accès IP limité au serveur local.")
@@ -639,6 +676,29 @@ def cli():
         config["keys"][args.name]={"hash":digest(token),"scopes":scopes,"created":int(time.time())}
         save_config(config)
         print(f"Clé {args.name} (affichée une seule fois) : {token}")
+        return
+    if args.command=="automation":
+        if args.action=="list":
+            print("\n".join(config.get("automation_keys", {})))
+            return
+        if not args.name or not re.fullmatch(r"[A-Za-z0-9_.-]{1,50}", args.name):
+            raise SystemExit("Nom d'automatisation requis (lettres, chiffres, _, -, .)")
+        if args.action=="revoke":
+            if args.name not in config.get("automation_keys", {}):
+                raise SystemExit("Automatisation inconnue")
+            del config["automation_keys"][args.name]
+            save_config(config)
+            print("Clé d'automatisation révoquée")
+            return
+        if args.name in config.get("automation_keys", {}):
+            raise SystemExit("Nom d'automatisation déjà utilisé")
+        secret = secrets.token_urlsafe(32)
+        config.setdefault("automation_keys", {})[args.name] = {"hash": digest(secret), "created": int(time.time())}
+        save_config(config)
+        base = f"{config['public_url']}/simple-api-3cx/v1/automation"
+        print(f"Statut : {base}?poste=10&action=away&auth={args.name}:{secret}")
+        print(f"File : {base}?poste=10&file=81&action=login&auth={args.name}:{secret}")
+        print("Remplacer poste, file et action selon le besoin. Secret affiché une seule fois.")
         return
     if args.command=="allow":
         if args.action=="list":

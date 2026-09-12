@@ -28,7 +28,7 @@
 
 ## Fonctions
 
-**Chaque lecture correspond à une URL HTTPS en <code>GET</code> ; chaque modification à une URL HTTPS en <code>POST</code>.** Un client HTTP appelle ces URL avec une clé API et depuis une IP autorisée. Pour déclencher une action en collant simplement une URL dans un navigateur, l’administrateur peut créer un **lien d’action** limité à un poste, une file et une opération.
+**Chaque lecture correspond à une URL HTTPS en <code>GET</code> ; chaque modification à une URL HTTPS en <code>POST</code> ou à l’URL d’automatisation en <code>GET</code>.** Un client HTTP appelle ces URL avec une clé et depuis une IP autorisée. L’URL d’automatisation permet de changer le poste, la file et l’action sans créer un lien pour chaque combinaison.
 
 | Domaine | Ce que permet l’URL de lecture | Ce que permet l’URL d’action |
 | --- | --- | --- |
@@ -97,7 +97,7 @@ curl -fsS 'https://<fqdn-3cx>/simple-api-3cx/v1/health'
 
 ## Accès et sécurité
 
-Les routes de données et d’action demandent **une IP autorisée et une clé API valide** dans l’en-tête <code>Authorization: Bearer &lt;clé&gt;</code>. Les routes <code>/health</code> et <code>/help</code> sont publiques. Par défaut, seules les IP locales <code>127.0.0.1</code> et <code>::1</code> sont autorisées.
+Les routes de données et d’action demandent **une IP autorisée et une clé API valide** dans l’en-tête <code>Authorization: Bearer &lt;clé&gt;</code>. La route d’automatisation utilise une clé spécifique dans l’URL et exige aussi une IP autorisée. Les routes <code>/health</code> et <code>/help</code> sont publiques. Par défaut, seules les IP locales <code>127.0.0.1</code> et <code>::1</code> sont autorisées.
 
 | Droit | Accès |
 | --- | --- |
@@ -120,7 +120,7 @@ sudo simple-api-3cx allow remove 203.0.113.10/32
 sudo simple-api-3cx key revoke client-controle
 ~~~
 
-Les paramètres des URL ne sont pas journalisés par l’application et le journal d’accès de la route nginx est désactivé. Un lien navigateur contient néanmoins un secret dans l’URL : il peut rester dans l’historique ou être ouvert par un outil de prévisualisation.
+Les paramètres des URL ne sont pas journalisés par l’application et le journal d’accès de la route nginx est désactivé. Un lien navigateur ou d’automatisation contient néanmoins un secret dans l’URL : il peut rester dans l’historique ou être ouvert par un outil de prévisualisation. Traiter cette URL comme un mot de passe et révoquer la clé si elle est divulguée.
 
 ## Référence de l’API
 
@@ -180,7 +180,24 @@ POST https://<fqdn-3cx>/simple-api-3cx/v1/queues/<file>/agents/<poste>/login
      {"logged_in":false}
 ~~~
 
-Dans ces exemples, la clé est transmise dans l’en-tête <code>Authorization: Bearer &lt;cle-api&gt;</code>. Une URL de lecture ou de <code>POST</code> ne se colle donc pas seule dans la barre d’adresse du navigateur : pour **cliquer sur une URL et exécuter une action**, générer un lien navigateur ci-dessous.
+Dans ces exemples, la clé est transmise dans l’en-tête <code>Authorization: Bearer &lt;cle-api&gt;</code>. Une URL de lecture ou de <code>POST</code> ne se colle donc pas seule dans la barre d’adresse du navigateur. Pour **cliquer sur une URL et exécuter une action**, utiliser une URL d’automatisation ou un lien navigateur ci-dessous.
+
+## URL d’automatisation paramétrable
+
+Créer une seule clé pour piloter les statuts et la connexion individuelle aux files avec la même route <code>GET /automation</code> :
+
+~~~bash
+sudo simple-api-3cx automation create mon-client
+~~~
+
+La commande affiche le secret une seule fois. Remplacer <code>&lt;nom&gt;:&lt;secret&gt;</code> par la valeur obtenue ; seuls <code>poste</code>, <code>file</code> et <code>action</code> changent ensuite :
+
+~~~text
+https://<fqdn-3cx>/simple-api-3cx/v1/automation?poste=<poste>&action=<statut>&auth=<nom>:<secret>
+https://<fqdn-3cx>/simple-api-3cx/v1/automation?poste=<poste>&file=<file>&action=<login|logout>&auth=<nom>:<secret>
+~~~
+
+Les statuts acceptés sont <code>available</code> (disponible), <code>away</code> (absent), <code>dnd</code> (ne pas déranger), <code>custom1</code> et <code>custom2</code>. Pour une file, <code>login</code> connecte et <code>logout</code> déconnecte **cette file uniquement**. Le poste doit déjà être membre de la file. L’URL fonctionne dans un navigateur ou avec <code>curl 'URL'</code> depuis une IP autorisée. Ouvrir l’URL déclenche immédiatement l’action ; une prévisualisation automatique peut aussi la déclencher. Révoquer avec <code>sudo simple-api-3cx automation revoke mon-client</code>.
 
 ## Liens pour navigateur
 
@@ -202,6 +219,7 @@ Chaque commande affiche l’URL complète **une seule fois**. L’ouverture du l
 sudo simple-api-3cx key list
 sudo simple-api-3cx allow list
 sudo simple-api-3cx link list
+sudo simple-api-3cx automation list
 systemctl status simple-api-3cx
 journalctl -u simple-api-3cx -n 100 --no-pager
 ~~~

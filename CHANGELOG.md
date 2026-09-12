@@ -4,6 +4,7 @@ Les changements visibles par les utilisateurs sont consignés ici. Le projet n�
 
 ## Non publié
 
+- URL d’automatisation paramétrable pour les statuts et la connexion/déconnexion d’une file précise, avec clé révocable et filtrage IP.
 - Documentation GitHub réorganisée : installation, dépendances, architecture, sécurité et référence générique des URL de l’API.
 - Licence MIT, politique de sécurité et vérifications automatiques des tests Python et des scripts shell.
 
