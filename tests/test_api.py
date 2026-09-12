@@ -134,7 +134,7 @@ class SecurityTests(unittest.TestCase):
         with mock.patch.object(api.Handler, "change_status",
                                lambda self, poste, action, config: self.respond(200, {"poste": poste, "action": action})):
             first, first_data = self.request("GET", "/simple-api-3cx/v1/automation?poste=10&action=away&auth=client:secret")
-            second, second_data = self.request("GET", "/simple-api-3cx/v1/automation?poste=14&action=dispo&auth=client:secret")
+            second, second_data = self.request("GET", "/simple-api-3cx/v1/automation?poste=14&action=available&auth=client:secret")
         self.assertEqual((first, first_data, second, second_data),
                          (200, {"poste": "10", "action": "away"}, 200, {"poste": "14", "action": "available"}))
 
@@ -144,8 +144,8 @@ class SecurityTests(unittest.TestCase):
         api.save_config(config)
         with mock.patch.object(api.Handler, "change_queue_individual",
                                lambda self, poste, file_number, logged_in: self.respond(200, {"poste": poste, "file": file_number, "logged_in": logged_in})):
-            on, on_data = self.request("GET", "/simple-api-3cx/v1/automation?poste=14&file=81&action=co&auth=client:secret")
-            off, off_data = self.request("GET", "/simple-api-3cx/v1/automation?poste=10&file=82&action=deco&auth=client:secret")
+            on, on_data = self.request("GET", "/simple-api-3cx/v1/automation?poste=14&file=81&action=login&auth=client:secret")
+            off, off_data = self.request("GET", "/simple-api-3cx/v1/automation?poste=10&file=82&action=logout&auth=client:secret")
         self.assertEqual((on, on_data, off, off_data),
                          (200, {"poste": "14", "file": "81", "logged_in": True},
                           200, {"poste": "10", "file": "82", "logged_in": False}))
