@@ -1,0 +1,76 @@
+#!/bin/sh
+set -eu
+APP=/opt/simple-api-3cx/simple_api_3cx.py
+if [ "$(id -u)" -ne 0 ]; then
+  echo "Exécuter avec sudo : sudo simple-api-3cx" >&2
+  exit 1
+fi
+if [ "$#" -gt 0 ]; then
+  exec /usr/bin/python3 "$APP" "$@"
+fi
+while :; do
+  echo
+  echo "Simple API 3cx — administration"
+  echo "1. Lister les clés"
+  echo "2. Créer une clé"
+  echo "3. Révoquer une clé"
+  echo "4. Lister les IP autorisées"
+  echo "5. Autoriser une IP/CIDR"
+  echo "6. Retirer une IP/CIDR"
+  echo "7. Créer un lien navigateur temporaire"
+  echo "8. État du service"
+  echo "9. Créer un lien permanent limité à un statut"
+  echo "10. Lister les liens permanents"
+  echo "11. Révoquer un lien permanent"
+  echo "12. Créer un lien permanent pour une file précise"
+  echo "0. Quitter"
+  printf '> '
+  IFS= read -r choice || exit 0
+  case "$choice" in
+    1) /usr/bin/python3 "$APP" key list ;;
+    2)
+      printf 'Nom de la clé : '; IFS= read -r key_name
+      printf 'Droits (read, control ou read,control) : '; IFS= read -r scopes
+      /usr/bin/python3 "$APP" key create "$key_name" --scopes "$scopes"
+      ;;
+    3)
+      printf 'Nom de la clé à révoquer : '; IFS= read -r key_name
+      /usr/bin/python3 "$APP" key revoke "$key_name"
+      ;;
+    4) /usr/bin/python3 "$APP" allow list ;;
+    5)
+      printf 'IP ou CIDR : '; IFS= read -r cidr
+      /usr/bin/python3 "$APP" allow add "$cidr"
+      ;;
+    6)
+      printf 'IP ou CIDR : '; IFS= read -r cidr
+      /usr/bin/python3 "$APP" allow remove "$cidr"
+      ;;
+    7)
+      printf 'Poste : '; IFS= read -r extension
+      printf 'Statut (available, away, dnd, custom1, custom2) : '; IFS= read -r status
+      /usr/bin/python3 "$APP" url "$extension" "$status"
+      ;;
+    8) systemctl --no-pager status simple-api-3cx ;;
+    9)
+      printf 'Nom du lien : '; IFS= read -r link_name
+      printf 'Poste : '; IFS= read -r extension
+      printf 'Statut (available, away, dnd, custom1, custom2) : '; IFS= read -r status
+      /usr/bin/python3 "$APP" link create "$link_name" "$extension" "$status"
+      ;;
+    10) /usr/bin/python3 "$APP" link list ;;
+    11)
+      printf 'Nom du lien à révoquer : '; IFS= read -r link_name
+      /usr/bin/python3 "$APP" link revoke "$link_name"
+      ;;
+    12)
+      printf 'Nom du lien : '; IFS= read -r link_name
+      printf 'File : '; IFS= read -r queue
+      printf 'Poste : '; IFS= read -r extension
+      printf 'Action (login ou logout) : '; IFS= read -r action
+      /usr/bin/python3 "$APP" queue-link "$link_name" "$queue" "$extension" "$action"
+      ;;
+    0) exit 0 ;;
+    *) echo 'Choix inconnu' ;;
+  esac
+done

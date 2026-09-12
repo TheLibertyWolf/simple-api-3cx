@@ -1,0 +1,26 @@
+name: Vérifications
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python-and-shell:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Vérifier la syntaxe
+        run: |
+          python3 -m py_compile simple_api_3cx.py
+          bash -n install.sh
+          sh -n scripts/simple-api-3cx
+      - name: Exécuter les tests
+        run: python3 -m unittest discover -s tests -v

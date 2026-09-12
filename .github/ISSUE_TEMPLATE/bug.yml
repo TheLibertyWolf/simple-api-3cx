@@ -1,0 +1,28 @@
+name: Signaler un défaut
+description: Décrire un comportement qui ne fonctionne pas comme prévu.
+title: "Défaut : "
+body:
+  - type: markdown
+    attributes:
+      value: "Ne joignez jamais de clé API, identifiant SIP, URL de lien navigateur ou donnée personnelle d’appel."
+  - type: input
+    id: version
+    attributes:
+      label: Versions
+      description: Version de Debian, de 3CX et, si connu, commit de Simple API 3cx.
+      placeholder: "Debian 12 · 3CX 20.0.x · commit …"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Étapes pour reproduire
+      description: Décrire les étapes, l’endpoint et un corps JSON sans secret.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Résultat observé et résultat attendu
+    validations:
+      required: true

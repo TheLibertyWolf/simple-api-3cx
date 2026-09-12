@@ -1,0 +1,23 @@
+name: Proposer une fonction
+description: Décrire un besoin pour l’API, l’installation ou la documentation.
+title: "Fonction : "
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Besoin
+      description: Quel scénario concret doit devenir possible ?
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Comportement souhaité
+      description: Préciser l’endpoint ou la commande envisagée si cela aide.
+    validations:
+      required: true
+  - type: input
+    id: context
+    attributes:
+      label: Environnement
+      placeholder: "Debian 12 · 3CX v20 PRO"

@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+config.json
+*credentials*
+*.key
+queue_control/bin/
+queue_control/obj/
